@@ -1,0 +1,28 @@
+from utility import animate_thinking
+from agents.agent import Agent
+from memory import Memory
+
+class CasualAgent(Agent):
+    def __init__(self, name, prompt_path, provider, verbose=False):
+        """
+        The casual agent is a special for casual talk to the user without specific tasks.
+        """
+        super().__init__(name, prompt_path, provider, verbose, None)
+        self.tools = {
+        } # No tools for the casual agent
+        self.role = "talk"
+        self.type = "casual_agent"
+        self.memory = Memory(self.load_prompt(prompt_path),
+                                memory_compression=False,
+                                model_provider=provider.get_model_name())
+    
+    async def process(self, prompt, speech_module) -> str:
+        self.memory.push('user', prompt)
+        animate_thinking("Thinking...", color="status")
+        answer, reasoning = await self.llm_request()
+        self.last_answer = answer
+        self.status_message = "Ready"
+        return answer, reasoning
+
+if __name__ == "__main__":
+    pass
