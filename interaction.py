@@ -170,8 +170,12 @@ class Interaction:
         self.current_agent = agent
         self.is_generating = True
         if agent.agent_name == "retrieval":
-            retrieval_answer, retrieval_reasoning = await agent.process(self.last_query, bot_key=self.bot_key, db=self.db)
-            browser_answer, browser_reasoning = await self.browser_agent.process(self.last_query, self.speech)
+            results = await asyncio.gather(
+                agent.process(self.last_query, bot_key=self.bot_key, db=self.db),
+                self.browser_agent.process(self.last_query, self.speech)
+            )
+            retrieval_answer, retrieval_reasoning = results[0]
+            browser_answer, browser_reasoning = results[1]
             sources = "\n".join(self.browser_agent.search_history) if self.browser_agent.search_history else None
             self.last_browser_search = browser_answer
             self.browser_sources = sources

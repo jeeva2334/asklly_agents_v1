@@ -260,7 +260,7 @@ class Agent():
         pretty_print(block, color="code")
         pretty_print('▂'*64, color="status")
 
-    def execute_modules(self, answer: str) -> Tuple[bool, str]:
+    async def execute_modules(self, answer: str) -> Tuple[bool, str]:
         """
         Execute all the tools the agent has and return the result.
         """
@@ -279,7 +279,7 @@ class Agent():
                 pretty_print(f"Executing {len(blocks)} {name} blocks...", color="status")
                 for block in blocks:
                     self.show_block(block)
-                    output = tool.execute([block])
+                    output = await asyncio.to_thread(tool.execute, [block])
                     feedback = tool.interpreter_feedback(output) # tool interpreter feedback
                     success = not tool.execution_failure_check(output)
                     self.blocks_result.append(executorResult(block, feedback, success, name))
@@ -289,5 +289,5 @@ class Agent():
                         return False, feedback
                 self.memory.push('user', feedback)
                 if save_path != None:
-                    tool.save_block(blocks, save_path)
+                    await asyncio.to_thread(tool.save_block, blocks, save_path)
         return True, feedback

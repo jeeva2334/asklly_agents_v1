@@ -10,6 +10,7 @@ from text_to_speech import Speech
 from tools.tools import Tools
 from logger import Logger
 from memory import Memory
+import asyncio
 
 class PlannerAgent(Agent):
     def __init__(self, name, prompt_path, provider, cid, verbose=False, browser=None):
@@ -125,21 +126,22 @@ class PlannerAgent(Agent):
         self.logger.info(f"Prompt for agent:\n{prompt}")
         return prompt
     
-    def show_plan(self, agents_tasks: List[dict], answer: str) -> None:
+    async def show_plan(self, agents_tasks: List[dict], answer: str) -> None:
         """
         Displays the plan made by the agent.
         Args:
             agents_tasks (dict): The tasks assigned to each agent.
             answer (str): The answer from the LLM.
         """
+        loop = asyncio.get_event_loop()
         if agents_tasks == []:
-            pretty_print(answer, color="warning")
-            pretty_print("Failed to make a plan. This can happen with (too) small LLM. Clarify your request and insist on it making a plan within ```json.", color="failure")
+            await loop.run_in_executor(None, pretty_print, answer, "warning")
+            await loop.run_in_executor(None, pretty_print, "Failed to make a plan. This can happen with (too) small LLM. Clarify your request and insist on it making a plan within ```json.", "failure")
             return
-        pretty_print("\n▂▘ P L A N ▝▂", color="status")
+        await loop.run_in_executor(None, pretty_print, "\n▂▘ P L A N ▝▂", "status")
         for task_name, task in agents_tasks:
-            pretty_print(f"{task['agent']} -> {task['task']}", color="info")
-        pretty_print("▔▗ E N D ▖▔", color="status")
+            await loop.run_in_executor(None, pretty_print, f"{task['agent']} -> {task['task']}", "info")
+        await loop.run_in_executor(None, pretty_print, "▔▗ E N D ▖▔", "status")
 
     async def make_plan(self, prompt: str) -> str:
         """
@@ -159,11 +161,11 @@ class PlannerAgent(Agent):
                 return []
             agents_tasks = self.parse_agent_tasks(answer)
             if agents_tasks == []:
-                self.show_plan(agents_tasks, answer)
+                await self.show_plan(agents_tasks, answer)
                 prompt = f"Failed to parse the tasks. Please write down your task followed by a json plan within ```json. Do not ask for clarification.\n"
                 pretty_print("Failed to make plan. Retrying...", color="warning")
                 continue
-            self.show_plan(agents_tasks, answer)
+            await self.show_plan(agents_tasks, answer)
             ok = True
         self.logger.info(f"Plan made:\n{answer}")
         return self.parse_agent_tasks(answer)
@@ -241,7 +243,10 @@ class PlannerAgent(Agent):
         agent_answer += "\nAgent succeeded with task." if success else "\nAgent failed with task (Error detected)."
         return agent_answer, success
     
-    def get_work_result_agent(self, task_needs, agents_work_result):
+    async def get_work_result_agent(self, task_needs, agents_work_result):
+        res = await asyncio.to_thread(
+            lambda: {k: agents_work_result[k] for k in task_needs if k in agents_work_result}
+        )
         res = {k: agents_work_result[k] for k in task_needs if k in agents_work_result}
         self.logger.info(f"Next agent needs: {task_needs}.\n Match previous agent result: {res}")
         return res
@@ -275,7 +280,7 @@ class PlannerAgent(Agent):
             if speech_module: speech_module.speak(f"I will {task_name}. I assigned the {task['agent']} agent to the task.")
 
             if agents_work_result is not None:
-                required_infos = self.get_work_result_agent(task['need'], agents_work_result)
+                required_infos = await self.get_work_result_agent(task['need'], agents_work_result)
             try:
                 answer, success = await self.start_agent_process(task, required_infos)
             except Exception as e:
