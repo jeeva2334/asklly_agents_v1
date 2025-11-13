@@ -137,12 +137,10 @@ def create_chrome_options(headless=False, stealth_mode=True, crx_path="./crx/nop
     
     user_agent = get_random_user_agent()
     width, height = (1920, 1080)
-    profile_dir = f"/tmp/chrome_profile_{uuid.uuid4().hex[:8]}"
     
     # Core options
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument('--disable-dev-shm-usage')
-    chrome_options.add_argument(f'--user-data-dir={profile_dir}')
     chrome_options.add_argument(f"--accept-lang={lang}-{lang.upper()},{lang};q=0.9")
     chrome_options.add_argument("--disable-extensions")
     chrome_options.add_argument("--disable-background-timer-throttling")
@@ -162,7 +160,6 @@ def create_chrome_options(headless=False, stealth_mode=True, crx_path="./crx/nop
     chrome_options.add_argument(f'user-agent={user_agent["ua"]}')
     chrome_options.add_argument("--disable-gpu")
     chrome_options.add_argument(f'--window-size={width},{height}')
-    chrome_options.add_argument("--user-data-dir=C:\\Temp\\chrome_temp")
     
     if not stealth_mode:
         if not os.path.exists(crx_path):
@@ -230,7 +227,6 @@ def create_driver(headless=False, stealth_mode=True, crx_path="./crx/nopecha.crx
     chrome_options = create_chrome_options(headless, stealth_mode, crx_path, lang, port)
     profile_dir = os.path.join(tempfile.gettempdir(), f"chrome_profile_{uuid.uuid4().hex[:8]}")
     os.makedirs(profile_dir, exist_ok=True)
-
     chrome_options.add_argument(f'--user-data-dir={profile_dir}')
     chrome_options.add_argument('--no-sandbox')
     chrome_options.add_argument('--disable-dev-shm-usage')
