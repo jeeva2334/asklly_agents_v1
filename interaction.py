@@ -24,6 +24,7 @@ class Interaction:
         self.last_answer = None
         self.last_reasoning = None
         self.agents = agents
+        self.last_active_time = None
         self.tts_enabled = tts_enabled
         self.stt_enabled = stt_enabled
         self.recover_last_session = recover_last_session
@@ -208,3 +209,7 @@ class Interaction:
         if self.current_agent is not None:
             self.current_agent.show_answer()
 
+    def close(self):
+        """Close the interaction and the browser."""
+        if self.browser_agent and self.browser_agent.browser:
+            self.browser_agent.browser.close()
